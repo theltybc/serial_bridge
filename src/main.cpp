@@ -80,8 +80,8 @@ void wifi_connect_up(void) {
 
 void pass(void) {
   WiFiClient client;
-
   if (client.connect(HOST, TCP_PORT)) {
+    client.setNoDelay(true);
     while (client.connected()) {
       while (client.available() > 0) {
         UART_PORT.write(client.read());
