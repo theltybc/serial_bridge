@@ -9,8 +9,17 @@ void pass(void);
 #define UART_SPEED 115200
 #define UART_RS 2 //выход для переключения направления передачи
 
+// #define SSID "45 REGION"
+// #define PASSHRASE "7529527529"
+#define SSID "SSID"
+#define PASSHRASE "PASSHRASE"
+
+#define HOST "192.168.4.1"
+#define TCP_PORT 2000
+
 void setup() {
   UART_PORT.begin(UART_SPEED);
+  UART_PORT.setTimeout(100);
   pinMode(UART_RS, OUTPUT);
 
 #ifdef MODE_SERVER
@@ -27,12 +36,7 @@ void loop() {
 
 #ifdef MODE_SERVER
 
-#define SSID "SSID"
-#define PASSHRASE "PASSHRASE"
-
-#define TCP_PORT 2000
 static WiFiServer server(TCP_PORT);
-WiFiClient client;
 
 void wifi_connect_up(void) {
   if (server.status() != CLOSED) {
@@ -46,13 +50,13 @@ void wifi_connect_up(void) {
 
 void pass(void) {
   while (server.hasClient()) {
-    client = server.available();
+    WiFiClient client = server.available();
     while (client.connected()) {
       while (client.available() > 0) {
-        Serial.write(client.read());
+        UART_PORT.write(client.read());
       }
-      while (Serial.available() > 0) {
-        client.write(Serial.read());
+      while (UART_PORT.available() > 0) {
+        client.write(UART_PORT.read());
       }
     }
     client.stop();
@@ -60,14 +64,6 @@ void pass(void) {
 }
 
 #else // MODE_SERVER
-
-// #define SSID "45 REGION"
-// #define PASSHRASE "7529527529"
-#define SSID "SSID"
-#define PASSHRASE "PASSHRASE"
-
-#define HOST "192.168.4.1"
-#define PORT 2000
 
 void wifi_connect_up(void) {
   if (WiFi.status() == WL_CONNECTED) {
@@ -85,13 +81,13 @@ void wifi_connect_up(void) {
 void pass(void) {
   WiFiClient client;
 
-  if (client.connect(HOST, PORT)) {
+  if (client.connect(HOST, TCP_PORT)) {
     while (client.connected()) {
       while (client.available() > 0) {
-        Serial.write(client.read());
+        UART_PORT.write(client.read());
       }
-      while (Serial.available() > 0) {
-        client.write(Serial.read());
+      while (UART_PORT.available() > 0) {
+        client.write(UART_PORT.read());
       }
     }
     client.stop();
