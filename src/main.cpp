@@ -43,7 +43,7 @@ void wifi_connect_up(void) {
     return;
   }
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(SSID, PASSHRASE);
+  WiFi.softAP(SSID, PASSHRASE, 0, 1);
   server.begin();
   server.setNoDelay(true);
 }
@@ -51,6 +51,7 @@ void wifi_connect_up(void) {
 void pass(void) {
   while (server.hasClient()) {
     WiFiClient client = server.available();
+    client.setNoDelay(true);
     while (client.connected()) {
       while (client.available() > 0) {
         UART_PORT.write(client.read());
