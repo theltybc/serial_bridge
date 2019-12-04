@@ -32,11 +32,12 @@ void setup() {
   pinMode(UART_RS, OUTPUT);
   digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
 
-  pinMode(PIN_SETTING_MODE, INPUT_PULLUP);
+  pinMode(PIN_SETTING_MODE, INPUT_PULLDOWN_16);
 
   setting_read();
-  if (!setting_available() || digitalRead(PIN_SETTING_MODE) != 1) {
-    debug("SETTING MODE\n");
+
+  if (!setting_available() || digitalRead(PIN_SETTING_MODE)) {
+    debug("SETTING MODE %i %i\n", digitalRead(PIN_SETTING_MODE), setting_get_ap());
     init_setting_mode();
   } else {
     init_main_mod();

@@ -16,13 +16,11 @@ void web_init(void) {
 }
 
 static void handler_page_request(void) {
-  Serial.printf("handle request page");
   server.send(200, "text/html", page, sizeof(page));
   server.sendHeader("Connection", "close");
 }
 
 static void handler_settings_post(void) {
-  Serial.println("handler_settings_post");
   int result = 0;
   if (server.hasArg("ssid") && server.hasArg("pass")) {
     result = setting_save(server.hasArg("ap"),
