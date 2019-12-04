@@ -17,7 +17,6 @@ void init_main_mod(void);
 
 #define PIN_SETTING_MODE 16
 
-
 // #define SSID "45 REGION"
 // #define PASSHRASE "7529527529"
 #define SSID "SSID"
@@ -43,7 +42,6 @@ void setup() {
     init_main_mod();
   }
 }
-
 
 void init_setting_mode(void) {
   wifi_ap_up(SSID, PASSHRASE, 0);
@@ -84,8 +82,8 @@ void transfer(WiFiClient client) {
     while (client.available() > 0) {
       digitalWrite(UART_RS, UART_RS_TRANSFER_STATE);
       UART_PORT.write(client.read());
-      digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
     }
+    digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
     while (UART_PORT.available() > 0) {
       client.write(UART_PORT.read());
     }
