@@ -1,111 +1,94 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <string.h>
 #include "log.h"
 #include "web.h"
 #include "setting_store.h"
+#include "wifi.h"
 
-void wifi_connect_up(int);
-void pass(void);
+void transfer(WiFiClient client);
+void init_setting_mode(void);
+void init_main_mod(void);
 
 #define UART_PORT Serial
 #define UART_SPEED 115200
-#define UART_RS 2 //выход для переключения направления передачи
+#define UART_RS 2                //выход для переключения направления передачи
+#define UART_RS_TRANSFER_STATE 1 //значение при передаче
+
+#define PIN_SETTING_MODE 16
+
 
 // #define SSID "45 REGION"
 // #define PASSHRASE "7529527529"
 #define SSID "SSID"
 #define PASSHRASE "PASSHRASE"
 
-#define HOST "192.168.4.1"
-#define TCP_PORT 2000
+WiFiClient (*get_client)(void);
+
+int setting_mode = 1;
 
 void setup() {
   UART_PORT.begin(UART_SPEED);
   UART_PORT.setTimeout(100);
   pinMode(UART_RS, OUTPUT);
+  digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
 
-#ifdef MODE_SERVER
-  Serial.println("\n\t\t\tMODE_SERVER");
-#else
-  Serial.println("\n\t\t\tMODE_CLIENT");
-#endif
-  wifi_connect_up(0);
+  pinMode(PIN_SETTING_MODE, INPUT_PULLUP);
 
-  web_init();
-  if (setting_read() == 0) {
-    debug("ap %i\n", setting_get_ap());
-    debug("ssid %s\n", setting_get_ssid());
-    debug("pass %s\n", setting_get_pass());
+  setting_read();
+  if (!setting_available() || digitalRead(PIN_SETTING_MODE) != 1) {
+    debug("SETTING MODE\n");
+    init_setting_mode();
   } else {
-    debug("fail read setting\n");
+    init_main_mod();
   }
+}
+
+
+void init_setting_mode(void) {
+  wifi_ap_up(SSID, PASSHRASE, 0);
+  web_init();
+}
+
+void init_main_mod(void) {
+  int ap = setting_get_ap();
+  const char *ssid = setting_get_ssid();
+  const char *pass = setting_get_pass();
+  debug("ap %i\n", ap);
+  debug("ssid %s\n", ssid);
+  debug("pass %s\n", pass);
+  if (ap) {
+    debug("AP MODE\n");
+    wifi_ap_up(ssid, pass, 1);
+    get_client = wifi_get_client;
+  } else {
+    debug("STA MODE\n");
+    wifi_sta_up(ssid, pass);
+    get_client = wifi_create_client;
+  }
+  setting_mode = 0;
 }
 
 void loop() {
-  // pass();
-  web_handle();
-}
-
-#ifdef MODE_SERVER
-
-static WiFiServer server(TCP_PORT);
-
-void wifi_connect_up(int ssid_hidden) {
-  if (server.status() != CLOSED) {
-    return;
+  if (setting_mode) {
+    web_handle();
+  } else {
+    WiFiClient client = get_client();
+    transfer(client);
   }
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(SSID, PASSHRASE, 0, ssid_hidden);
-  server.begin();
-  server.setNoDelay(true);
 }
 
-void pass(void) {
-  while (server.hasClient()) {
-    WiFiClient client = server.available();
-    client.setNoDelay(true);
-    while (client.connected()) {
-      while (client.available() > 0) {
-        UART_PORT.write(client.read());
-      }
-      while (UART_PORT.available() > 0) {
-        client.write(UART_PORT.read());
-      }
+void transfer(WiFiClient client) {
+  client.setNoDelay(true);
+  while (client.connected()) {
+    while (client.available() > 0) {
+      digitalWrite(UART_RS, UART_RS_TRANSFER_STATE);
+      UART_PORT.write(client.read());
+      digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
     }
-    client.stop();
-  }
-}
-
-#else // MODE_SERVER
-
-void wifi_connect_up(void) {
-  if (WiFi.status() == WL_CONNECTED) {
-    return;
-  }
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(SSID, PASSHRASE); //Connect to wifi
-  WiFi.setAutoReconnect(1);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    debug(".");
-    delay(500);
-  }
-}
-
-void pass(void) {
-  WiFiClient client;
-  if (client.connect(HOST, TCP_PORT)) {
-    client.setNoDelay(true);
-    while (client.connected()) {
-      while (client.available() > 0) {
-        UART_PORT.write(client.read());
-      }
-      while (UART_PORT.available() > 0) {
-        client.write(UART_PORT.read());
-      }
+    while (UART_PORT.available() > 0) {
+      client.write(UART_PORT.read());
     }
-    client.stop();
   }
+  client.stop();
 }
-
-#endif // MODE_SERVER

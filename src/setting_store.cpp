@@ -51,3 +51,9 @@ const char *setting_get_ssid(void) {
 const char *setting_get_pass(void) {
   return setting_wifi.pass;
 }
+
+int setting_available(void) {
+  return (setting_wifi.ap == 0 || setting_wifi.ap == 1) &&
+         strnlen(setting_wifi.ssid, SIZE_FIELD) > 0 &&
+         strnlen(setting_wifi.pass, SIZE_FIELD) > 0;
+}

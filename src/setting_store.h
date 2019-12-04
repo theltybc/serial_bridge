@@ -14,3 +14,4 @@ int setting_read(void);
 int setting_get_ap(void);
 const char* setting_get_ssid(void);
 const char* setting_get_pass(void);
+int setting_available(void);
