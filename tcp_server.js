@@ -1,7 +1,5 @@
 const net = require("net");
 
-const client = new net.Socket();
-
 const HOST = "192.168.1.131";
 const PORT = 2000;
 
