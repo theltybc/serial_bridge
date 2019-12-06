@@ -14,4 +14,6 @@ int wifi_sta_has_connect(void);
 
 
 WiFiClient wifi_get_client(void);
+
+void set_host_port(const char *h, uint16_t p);
 WiFiClient wifi_create_client(void);

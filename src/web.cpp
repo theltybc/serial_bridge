@@ -25,7 +25,10 @@ static void handler_settings_post(void) {
   if (server.hasArg("ssid") && server.hasArg("pass")) {
     result = setting_save(server.hasArg("ap"),
                        server.arg("ssid").c_str(),
-                       server.arg("pass").c_str());
+                       server.arg("pass").c_str(),
+                       server.hasArg("host") ? server.arg("host").c_str() : "",
+                       server.hasArg("port") ? server.arg("port").toInt() : 0
+                       );
   } else {
     result = -1;
   }

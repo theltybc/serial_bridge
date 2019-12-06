@@ -20,7 +20,7 @@ void init_main_mod(void);
 // #define SSID "45 REGION"
 // #define PASSHRASE "7529527529"
 #define SSID "SSID"
-#define PASSHRASE "PASSHRASE"
+#define PASSHRASE "12345678"
 
 WiFiClient (*get_client)(void);
 
@@ -53,18 +53,27 @@ void init_main_mod(void) {
   int ap = setting_get_ap();
   const char *ssid = setting_get_ssid();
   const char *pass = setting_get_pass();
+
   debug("ap %i\n", ap);
   debug("ssid %s\n", ssid);
   debug("pass %s\n", pass);
+
   if (ap) {
     debug("AP MODE\n");
     wifi_ap_up(ssid, pass, 1);
+
     get_client = wifi_get_client;
   } else {
     debug("STA MODE\n");
     wifi_sta_up(ssid, pass);
+
+    const char *host = setting_get_host();
+    uint16_t port = setting_get_port();
+    set_host_port(host, port);
+
     get_client = wifi_create_client;
   }
+  
   setting_mode = 0;
 }
 

@@ -1,10 +1,10 @@
 const net = require("net");
 
 const HOST = "192.168.1.131";
-const PORT = 2000;
+const PORT = 3000;
 
 var server = net.createServer(function (socket) {
-  socket.write('Echo server\r\n');
+  console.log("connect");
   socket.pipe(process.stdin).pipe(socket);
 });
 
