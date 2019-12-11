@@ -60,7 +60,7 @@ void init_main_mod(void) {
 
   if (ap) {
     debug("AP MODE\n");
-    wifi_ap_up(ssid, pass, 1);
+    wifi_ap_up(ssid, pass, SSID_HIDDEN);
 
     get_client = wifi_get_client;
   } else {

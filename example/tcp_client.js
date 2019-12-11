@@ -7,7 +7,6 @@ const PORT = 2000;
 
 client.connect(PORT, HOST, function () {
   console.log("Connected");
-  client.write("Hello, server! Love, Client.");
 });
 
 client.on("error", function (err) {
