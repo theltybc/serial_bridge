@@ -22,8 +22,8 @@ static void handler_page_request(void) {
 
 static void handler_settings_post(void) {
   int result = 0;
-  if (server.hasArg("ssid") && server.hasArg("pass")) {
-    result = setting_save(server.hasArg("ap"),
+  if (server.hasArg("ssid") && server.hasArg("pass") && server.hasArg("mode") ) {
+    result = setting_save(server.arg("mode") == "1",
                        server.arg("ssid").c_str(),
                        server.arg("pass").c_str(),
                        server.hasArg("host") ? server.arg("host").c_str() : "",
