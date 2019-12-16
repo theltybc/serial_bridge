@@ -48,5 +48,6 @@ void set_host_port(const char *h, uint16_t p) {
 WiFiClient wifi_create_client(void) {
   WiFiClient client;
   client.connect(host, port);
+  client.setNoDelay(true);
   return client;
 }

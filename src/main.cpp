@@ -23,11 +23,12 @@ void init_main_mod(void);
 #define PASSHRASE "12345678"
 
 enum Mode {
-  setting,
-  sta,
-  ap
+  m_setting,
+  m_sta,
+  m_ap
 };
-int mode = setting;
+
+int mode = m_setting;
 
 void setup() {
   UART_PORT.begin(UART_SPEED);
@@ -40,7 +41,6 @@ void setup() {
   setting_read();
 
   if (!setting_available() || digitalRead(PIN_SETTING_MODE)) {
-    debug("SETTING MODE %i %i\n", digitalRead(PIN_SETTING_MODE), setting_get_ap());
     init_setting_mode();
   } else {
     init_main_mod();
@@ -48,6 +48,7 @@ void setup() {
 }
 
 void init_setting_mode(void) {
+  debug("SETTING MODE %i %i\n", digitalRead(PIN_SETTING_MODE), setting_get_ap());
   wifi_ap_up(SSID, PASSHRASE, 0);
   web_init();
 }
@@ -65,7 +66,7 @@ void init_main_mod(void) {
     debug("AP MODE\n");
     wifi_ap_up(ssid, pass, SSID_HIDDEN);
 
-    mode = ap;
+    mode = m_ap;
   } else {
     debug("STA MODE\n");
     wifi_sta_up(ssid, pass);
@@ -74,36 +75,43 @@ void init_main_mod(void) {
     uint16_t port = setting_get_port();
     set_host_port(host, port);
 
-    mode = sta;
+    mode = m_sta;
   }
 }
 
 void loop() {
-  if (mode == setting) {
+  static WiFiClient client;
+  if (digitalRead(PIN_SETTING_MODE)) {
+    init_setting_mode();
+    mode = m_setting;
+  }
+  if (mode == m_setting) {
     web_handle();
   } else {
-    WiFiClient client;
-    if (mode == sta){
-      client = wifi_create_client();
-    }else {
-      client = wifi_get_client();
+    if (client.connected()) {
+      transfer(client, UART_PORT);
+    } else {
+      client.stop();
+      if (mode == m_ap) {
+        debug("wifi_get_client\n");
+        client = wifi_get_client();
+      } else {
+        debug("wifi_create_client\n");
+        client = wifi_create_client();
+      }
     }
-
-    transfer(client, UART_PORT);
   }
 }
 
 void transfer(WiFiClient client, HardwareSerial serial) {
-  client.setNoDelay(true);
-  while (client.connected()) {
-    while (client.available() > 0) {
-      digitalWrite(UART_RS, UART_RS_TRANSFER_STATE);
-      serial.write(client.read());
-    }
-    digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
-    while (serial.available() > 0) {
-      client.write(serial.read());
-    }
+  if (client.available() > 0) {
+    digitalWrite(UART_RS, UART_RS_TRANSFER_STATE);
   }
-  client.stop();
+  while (client.available() > 0) {
+    serial.write(client.read());
+  }
+  digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
+  while (serial.available() > 0) {
+    client.write(serial.read());
+  }
 }
