@@ -6,7 +6,7 @@
 #include "setting_store.h"
 #include "wifi.h"
 
-void transfer(WiFiClient client);
+void transfer(WiFiClient client, HardwareSerial serial);
 void init_setting_mode(void);
 void init_main_mod(void);
 
@@ -22,9 +22,12 @@ void init_main_mod(void);
 #define SSID "SSID"
 #define PASSHRASE "12345678"
 
-WiFiClient (*get_client)(void);
-
-int setting_mode = 1;
+enum Mode {
+  setting,
+  sta,
+  ap
+};
+int mode = setting;
 
 void setup() {
   UART_PORT.begin(UART_SPEED);
@@ -62,7 +65,7 @@ void init_main_mod(void) {
     debug("AP MODE\n");
     wifi_ap_up(ssid, pass, SSID_HIDDEN);
 
-    get_client = wifi_get_client;
+    mode = ap;
   } else {
     debug("STA MODE\n");
     wifi_sta_up(ssid, pass);
@@ -71,31 +74,35 @@ void init_main_mod(void) {
     uint16_t port = setting_get_port();
     set_host_port(host, port);
 
-    get_client = wifi_create_client;
+    mode = sta;
   }
-  
-  setting_mode = 0;
 }
 
 void loop() {
-  if (setting_mode) {
+  if (mode == setting) {
     web_handle();
   } else {
-    WiFiClient client = get_client();
-    transfer(client);
+    WiFiClient client;
+    if (mode == sta){
+      client = wifi_create_client();
+    }else {
+      client = wifi_get_client();
+    }
+
+    transfer(client, UART_PORT);
   }
 }
 
-void transfer(WiFiClient client) {
+void transfer(WiFiClient client, HardwareSerial serial) {
   client.setNoDelay(true);
   while (client.connected()) {
     while (client.available() > 0) {
       digitalWrite(UART_RS, UART_RS_TRANSFER_STATE);
-      UART_PORT.write(client.read());
+      serial.write(client.read());
     }
     digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
-    while (UART_PORT.available() > 0) {
-      client.write(UART_PORT.read());
+    while (serial.available() > 0) {
+      client.write(serial.read());
     }
   }
   client.stop();
