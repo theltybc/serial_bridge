@@ -7,6 +7,7 @@ Ready to use in PlatformIO with Arduino framework.
   esp start AP with name SSID password 12345678.
 
   Page with setting http://192.168.4.1/.
+  
   AP - if checked, up Fi-Wi AP and create tcp-server(192.168.4.1:2000), else connect to WiFI and to tcp-server.
 
   for AP mode:
