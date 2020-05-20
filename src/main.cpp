@@ -18,7 +18,7 @@ void show_indication(struct Indication *ind);
 
 #define PIN_SETTING_MODE 16
 
-#define PIN_STATE 14
+#define PIN_STATE 5
 #define PIN_STATE_BLINK 50
 
 // #define SSID "45 REGION"
