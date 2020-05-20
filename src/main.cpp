@@ -9,6 +9,7 @@
 void transfer(WiFiClient client, HardwareSerial serial);
 void init_setting_mode(void);
 void init_main_mod(void);
+void show_indication(struct Indication *ind);
 
 #define UART_PORT Serial
 #define UART_SPEED 115200
@@ -16,6 +17,9 @@ void init_main_mod(void);
 #define UART_RS_TRANSFER_STATE 1 //значение при передаче
 
 #define PIN_SETTING_MODE 16
+
+#define PIN_STATE 14
+#define PIN_STATE_BLINK 50
 
 // #define SSID "45 REGION"
 // #define PASSHRASE "7529527529"
@@ -28,6 +32,12 @@ enum Mode {
   m_ap
 };
 
+struct Indication {
+  int client;
+  int data;
+  timer_t _data_ind;
+} ind;
+
 int mode = m_setting;
 
 void setup() {
@@ -37,6 +47,8 @@ void setup() {
   digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
 
   pinMode(PIN_SETTING_MODE, INPUT_PULLDOWN_16);
+
+  pinMode(PIN_STATE, OUTPUT);
 
   setting_read();
 
@@ -89,6 +101,7 @@ void loop() {
     web_handle();
   } else {
     if (client.connected()) {
+      ind.client = 1;
       transfer(client, UART_PORT);
     } else {
       client.stop();
@@ -100,6 +113,7 @@ void loop() {
         client = wifi_create_client();
       }
     }
+    show_indication(&ind);
   }
 }
 
@@ -109,9 +123,35 @@ void transfer(WiFiClient client, HardwareSerial serial) {
   }
   while (client.available() > 0) {
     serial.write(client.read());
+    ind.data = 1;
   }
   digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
   while (serial.available() > 0) {
     client.write(serial.read());
+    ind.data = 1;
+  }
+}
+
+void show_indication(struct Indication *ind) {
+  if (ind->client) {
+    if (ind->_data_ind) {
+      if (ind->_data_ind < millis()) {
+        if (digitalRead(PIN_STATE) && ind->data == 0){
+          ind->_data_ind = 0;
+        } else {
+          ind->_data_ind = millis() + PIN_STATE_BLINK;
+        }
+        digitalWrite(PIN_STATE, !digitalRead(PIN_STATE));
+        ind->data = 0;
+      }
+    } else if (ind->data) {
+      ind->_data_ind = millis() + PIN_STATE_BLINK;
+      digitalWrite(PIN_STATE, 0);
+    } else {
+      digitalWrite(PIN_STATE, 1);
+    }
+    ind->client = 0;
+  } else {
+    digitalWrite(PIN_STATE, 0);
   }
 }
