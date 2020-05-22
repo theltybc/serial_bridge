@@ -43,6 +43,7 @@ int mode = m_setting;
 void setup() {
   UART_PORT.begin(UART_SPEED);
   UART_PORT.setTimeout(100);
+  UART_PORT.setRxBufferSize(256);
   pinMode(UART_RS, OUTPUT);
   digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
 
@@ -118,17 +119,25 @@ void loop() {
 }
 
 void transfer(WiFiClient client, HardwareSerial serial) {
-  if (client.available() > 0) {
+  uint8_t buffer[256];
+
+  int res = client.read(buffer, sizeof(buffer));
+  if (res > 0) {
     digitalWrite(UART_RS, UART_RS_TRANSFER_STATE);
+    while (res > 0) {
+      ind.data = 1;
+      serial.write(buffer, res);
+      res = client.read(buffer, sizeof(buffer));
+      ind.data = 1;
+    }
+    digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
   }
-  while (client.available() > 0) {
-    serial.write(client.read());
+
+  res = serial.read((char *)buffer, sizeof(buffer));
+  while (res > 0) {
     ind.data = 1;
-  }
-  digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
-  while (serial.available() > 0) {
-    client.write(serial.read());
-    ind.data = 1;
+    client.write(buffer, res);
+    res = serial.read((char *)buffer, sizeof(buffer));
   }
 }
 
@@ -136,7 +145,7 @@ void show_indication(struct Indication *ind) {
   if (ind->client) {
     if (ind->_data_ind) {
       if (ind->_data_ind < millis()) {
-        if (digitalRead(PIN_STATE) && ind->data == 0){
+        if (digitalRead(PIN_STATE) && ind->data == 0) {
           ind->_data_ind = 0;
         } else {
           ind->_data_ind = millis() + PIN_STATE_BLINK;

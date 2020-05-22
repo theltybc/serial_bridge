@@ -9,7 +9,7 @@ let wrong = 0;
 
 let timeout;
 
-const SIZE = 200
+const SIZE = 200;
 const TIMEOUT = 1000;
 
 const END_SYMBOL = "z";
