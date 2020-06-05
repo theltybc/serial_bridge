@@ -29,7 +29,8 @@ int wifi_sta_has_connect(void) {
 }
 
 WiFiClient wifi_get_client(void) {
-  return server.available();
+  WiFiClient client = server.available();
+  return client;
 }
 
 void set_host_port(const char *h, uint16_t p) {
@@ -40,7 +41,7 @@ void set_host_port(const char *h, uint16_t p) {
     p = TCP_PORT;
   }
 
-  debug("set_host_port: %s:%u", host, port);
+  debugf("set_host_port: %s:%u", host, port);
   host = h;
   port = p;
 }

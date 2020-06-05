@@ -10,15 +10,14 @@ void transfer(WiFiClient client, HardwareSerial serial);
 void init_setting_mode(void);
 void init_main_mod(void);
 void show_indication(struct Indication *ind);
+void drop(HardwareSerial serial);
 
-#define UART_PORT Serial
 #define UART_SPEED 115200
 #define UART_RS 2                //выход для переключения направления передачи
 #define UART_RS_TRANSFER_STATE 1 //значение при передаче
 
 #define PIN_SETTING_MODE 16
 
-#define PIN_STATE 5
 #define PIN_STATE_BLINK 50
 
 // #define SSID "45 REGION"
@@ -44,6 +43,7 @@ void setup() {
   UART_PORT.begin(UART_SPEED);
   UART_PORT.setTimeout(100);
   UART_PORT.setRxBufferSize(256);
+  debug_port_init();
   pinMode(UART_RS, OUTPUT);
   digitalWrite(UART_RS, !UART_RS_TRANSFER_STATE);
 
@@ -61,7 +61,7 @@ void setup() {
 }
 
 void init_setting_mode(void) {
-  debug("SETTING MODE %i %i\n", digitalRead(PIN_SETTING_MODE), setting_get_ap());
+  debugf("SETTING MODE %i %i\n", digitalRead(PIN_SETTING_MODE), setting_get_ap());
   wifi_ap_up(SSID, PASSHRASE, 0);
   web_init();
 }
@@ -71,17 +71,17 @@ void init_main_mod(void) {
   const char *ssid = setting_get_ssid();
   const char *pass = setting_get_pass();
 
-  debug("ap %i\n", ap);
-  debug("ssid %s\n", ssid);
-  debug("pass %s\n", pass);
+  debugf("ap %i\n", ap);
+  debugf("ssid %s\n", ssid);
+  debugf("pass %s\n", pass);
 
   if (ap) {
-    debug("AP MODE\n");
+    debugf("AP MODE\n");
     wifi_ap_up(ssid, pass, SSID_HIDDEN);
 
     mode = m_ap;
   } else {
-    debug("STA MODE\n");
+    debugf("STA MODE\n");
     wifi_sta_up(ssid, pass);
 
     const char *host = setting_get_host();
@@ -106,16 +106,22 @@ void loop() {
       transfer(client, UART_PORT);
     } else {
       client.stop();
+      drop(UART_PORT);
       if (mode == m_ap) {
-        debug("wifi_get_client\n");
+        debugf("wifi_get_client\n");
         client = wifi_get_client();
       } else {
-        debug("wifi_create_client\n");
+        debugf("wifi_create_client\n");
         client = wifi_create_client();
       }
     }
     show_indication(&ind);
   }
+}
+
+void drop(HardwareSerial serial) {
+  char buffer[250];
+  serial.read(buffer, sizeof(buffer));
 }
 
 void transfer(WiFiClient client, HardwareSerial serial) {
