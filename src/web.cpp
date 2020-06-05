@@ -32,7 +32,7 @@ static void handler_settings_post(void) {
   } else {
     result = -1;
   }
-  server.send(200, "text/plain", (result == 0 ? "OK" : "FAIL"));
+  server.send(200, "text/html", (result == 0 ? page_ok : page_fail));
   server.sendHeader("Connection", "close");
 }
 
